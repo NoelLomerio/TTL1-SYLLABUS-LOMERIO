@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Syllabus: Technology in Teaching and Learning 1</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Calm Academia (Off-white, Dark Slate, Muted Teal) -->
+    <!-- Application Structure Plan: A single-page application featuring a vertical weekly timeline navigation and a main content area. This design replaces the static table with an interactive, non-linear experience, allowing users (students) to quickly jump to any week's details. The structure is organized into thematic modules (Foundations, Core Skills, Advanced Topics) to provide a clearer learning journey overview. A top-level data visualization (donut chart of activities) provides an immediate summary of the course's pedagogical approach, making it more engaging and informative than a simple list. -->
+    <!-- Visualization & Content Choices: 1. Main Content -> Goal: Organize/Inform -> Method: Interactive timeline/content cards with JS -> Justification: Improves navigation and readability over a static table. 2. Teaching Activities -> Goal: Inform/Summarize -> Viz: Donut Chart (Chart.js/Canvas) -> Interaction: Hover tooltips -> Justification: Provides a high-level, visually engaging summary of the course's teaching methods, adding a dynamic element to the syllabus. NO SVG/Mermaid used. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f7f2;
+            color: #2d3748;
+        }
+        .active-week {
+            background-color: #4fd1c5;
+            color: #ffffff;
+            font-weight: 600;
+        }
+        .chart-container {
+            position: relative;
+            margin: auto;
+            height: 300px;
+            width: 100%;
+            max-width: 400px;
+        }
+        .content-card {
+            transition: all 0.3s ease-in-out;
+            opacity: 0;
+            transform: translateY(20px);
+            display: none;
+        }
+        .content-card.visible {
+            opacity: 1;
+            transform: translateY(0);
+            display: block;
+        }
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -21px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #cbd5e0;
+            border: 2px solid #f8f7f2;
+        }
+         .timeline-item.active-week::before {
+            background-color: #4fd1c5;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div class="container mx-auto px-4 py-8 md:py-12">
+        <header class="text-center mb-12">
+            <h1 class="text-4xl md:text-5xl font-bold text-gray-800">Technology in Teaching and Learning 1</h1>
+            <p class="text-lg text-gray-600 mt-2">An Interactive Course Syllabus</p>
+        </header>
+        
+        <div class="bg-white rounded-2xl shadow-lg p-6 md:p-8 mb-12">
+            <h2 class="text-2xl font-bold text-center text-gray-700 mb-4">Course Activity Distribution</h2>
+            <p class="text-center text-gray-500 mb-6">This chart provides a visual breakdown of the types of learning activities you'll engage in throughout the semester. This interactive syllabus is designed to help you easily navigate the course structure and understand the key expectations for each week.</p>
+            <div class="chart-container">
+                <canvas id="activityChart"></canvas>
+            </div>
+        </div>
+
+        <div class="flex flex-col md:flex-row gap-8">
+            <aside class="w-full md:w-1/4">
+                <div class="bg-white rounded-2xl shadow-lg p-6 sticky top-8">
+                    <h3 class="font-bold text-xl mb-4 text-gray-700">Course Timeline</h3>
+                    <nav id="week-navigation" class="relative border-l-2 border-gray-200 ml-4">
+                        <!-- Navigation items will be injected by JavaScript -->
+                    </nav>
+                </div>
+            </aside>
+
+            <main class="w-full md:w-3/4">
+                <div id="content-area">
+                    <!-- Content cards will be injected by JavaScript -->
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        const syllabusData = [
+            {
+                week: 1,
+                title: "Introduction to Educational Technology",
+                outcomes: "Define educational technology; explain its role in 21st-century education; identify current trends.",
+                topic: "Introduction to Educational Technology: Concepts, Trends, and the Digital Native Learner",
+                questions: "What is educational technology and why is it crucial for 21st-century teachers? How do digital natives learn differently, and what implications does this have for teaching?",
+                activities: "Lecture-discussion, Ice-breaker: 'My Digital Footprint,' Brainstorming: 'Tech in My Classroom'",
+                assessment: "Short quiz, Reflective journal entry",
+                references: "UNESCO ICT Competency Framework for Teachers; Relevant articles on digital natives/Gen Z learning."
+            },
+            {
+                week: 2,
+                title: "ICT Policies and Ethics",
+                outcomes: "Discuss national ICT policies affecting education; analyze ethical and societal issues related to technology use in education.",
+                topic: "ICT Policies and Ethical Issues in Education (e.g., Data Privacy Act, Cybercrime Law relevance)",
+                questions: "What national policies govern ICT use in Philippine education? How can teachers ensure ethical and responsible use of technology in their classrooms?",
+                activities: "Lecture, Case study analysis (e.g., cyberbullying, data privacy breaches), Group discussion on digital citizenship.",
+                assessment: "Case study presentation/report, Short essay on digital citizenship.",
+                references: "RA 10173 (Data Privacy Act); RA 10175 (Cybercrime Prevention Act); DepEd Orders on ICT."
+            },
+            {
+                week: 3,
+                title: "Learning Theories and Technology",
+                outcomes: "Connect major learning theories (behaviorism, cognitivism, constructivism) to technology integration; evaluate appropriate tech tools for different learning theories.",
+                topic: "Learning Theories and Technology Integration: Behaviorist, Cognitivist, Constructivist, and Connectivist Perspectives",
+                questions: "How do different learning theories inform the effective integration of technology? Which technologies best support specific theoretical approaches to learning?",
+                activities: "Lecture-discussion, Group activity: 'Matching Tech Tools to Learning Theories,' Tool exploration.",
+                assessment: "Concept map linking theories and tools, Short presentation of group findings.",
+                references: "Siemens (Connectivism); Vygotsky (SCT); Piaget (Cognitive Dev.); Bruner (Discovery Learning); Skinner (Operant Cond.)."
+            },
+            {
+                week: 4,
+                title: "Digital Content Creation",
+                outcomes: "Utilize various digital tools for creating engaging instructional materials; design effective presentations using multimedia.",
+                topic: "Digital Tools for Content Creation (e.g., Canva, Google Slides, Genially, video editors) and Effective Presentation Skills",
+                questions: "How can teachers create visually appealing and effective digital content? What are the principles of good multimedia design for learning?",
+                activities: "Hands-on workshop: Creating an infographic/poster/short video, Peer critique of digital outputs.",
+                assessment: "Creation of a digital instructional material (e.g., infographic, interactive presentation, short explainer video).",
+                references: "Mayer's Multimedia Principles; Canva tutorials; relevant online resources."
+            },
+            {
+                week: 5,
+                title: "Learning Management Systems",
+                outcomes: "Navigate and utilize features of an LMS (e.g., Google Classroom, Moodle); facilitate synchronous and asynchronous learning in virtual environments.",
+                topic: "Learning Management Systems (LMS) and Virtual Classrooms (e.g., Google Classroom, Zoom/Meet, Moodle basics)",
+                questions: "How can an LMS enhance classroom management and learning delivery? What are best practices for engaging students in a virtual classroom setting?",
+                activities: "Hands-on LMS exploration (create a dummy class), Role-playing virtual class scenarios, Discussion on synchronous vs. asynchronous learning.",
+                assessment: "LMS class setup (screenshot/demonstration), Participation in virtual class simulation.",
+                references: "LMS user guides (Google Classroom help); articles on effective online teaching."
+            },
+            {
+                week: 6,
+                title: "Digital Assessment Strategies",
+                outcomes: "Design and implement digital assessments (formative & summative); utilize online grading and feedback tools.",
+                topic: "Digital Assessment Tools and Strategies (e.g., Google Forms Quizzes, Quizizz, formative assessment apps, rubrics)",
+                questions: "How can technology be used to make assessment more efficient and effective? What are the ethical considerations in digital assessment?",
+                activities: "Hands-on workshop: Creating an online quiz with feedback, Discussion on academic integrity in digital assessments.",
+                assessment: "Design and implementation of a digital assessment tool for a specific learning outcome.",
+                references: "Relevant articles on digital assessment; specific tool tutorials."
+            },
+            {
+                week: 7,
+                title: "Midterm Examination",
+                outcomes: "Demonstrate understanding of concepts from Weeks 1-6.",
+                topic: "Midterm Examination",
+                questions: "N/A",
+                activities: "Review session.",
+                assessment: "Written/Practical Midterm Exam (covering Weeks 1-6)",
+                references: "All previous course materials."
+            },
+            {
+                week: 8,
+                title: "Exploring Emerging Technologies",
+                outcomes: "Identify and discuss emerging technologies (e.g., AR/VR, AI, gamification) and their potential in education.",
+                topic: "Exploring Emerging Technologies: Augmented Reality (AR), Virtual Reality (VR), Gamification, and AI in the Classroom",
+                questions: "What are the latest technological innovations impacting education? How can these emerging technologies transform learning experiences?",
+                activities: "Video presentations/demonstrations of emerging tech, Group brainstorming on practical applications in TLE.",
+                assessment: "Short research paper/presentation on an emerging technology in education.",
+                references: "Articles/reports on educational technology trends; specific tech demos."
+            },
+            {
+                week: 9,
+                title: "Artificial Intelligence in Education",
+                outcomes: "Identify various AI tools relevant to teaching and learning; discuss ethical considerations and biases in AI; apply AI for content generation and personalized learning.",
+                topic: "Artificial Intelligence in Education: Overview, Tools, and Ethical Frameworks",
+                questions: "How can AI support teachers and personalize student learning? What are the ethical responsibilities when using AI in education?",
+                activities: "Hands-on exploration of AI tools (e.g., ChatGPT for lesson planning, AI image generators for visuals), Discussion on AI ethics in education.",
+                assessment: "Practical application of an AI tool for a teaching task (e.g., generating lesson plan ideas, creating a quiz).",
+                references: "UNESCO recommendations on AI ethics; articles on AI in education."
+            },
+            {
+                week: 10,
+                title: "Digital & Media Literacy (MIL)",
+                outcomes: "Define digital literacy and MIL; develop strategies to teach MIL to students; identify fake news and misinformation.",
+                topic: "Digital Literacy and Media and Information Literacy (MIL) for Teachers and Students",
+                questions: "Why are digital literacy and MIL critical skills for 21st-century learners? How can teachers effectively integrate MIL into their curriculum?",
+                activities: "Lecture-discussion, Analyzing online content for misinformation, Designing a mini-MIL lesson plan.",
+                assessment: "MIL lesson plan outline, Short reflection on digital citizenship.",
+                references: "UNESCO MIL Curriculum for Teachers; relevant articles on fake news/misinformation."
+            },
+            {
+                week: 11,
+                title: "Technology-Enhanced Lesson Planning",
+                outcomes: "Integrate appropriate technology tools and strategies into lesson plans; justify technology choices based on learning objectives and student needs.",
+                topic: "Technology-Enhanced Lesson Planning: Integrating ICT into Specific Subject Areas (with focus on TLE examples)",
+                questions: "How can technology be seamlessly integrated into lesson plans to achieve specific learning outcomes? What are the key considerations when designing technology-rich lessons?",
+                activities: "Workshop: Developing a technology-enhanced lesson plan (individual or small group), Peer review of lesson plans.",
+                assessment: "Submission of a comprehensive technology-enhanced lesson plan for a TLE topic.",
+                references: "DepEd Lesson Plan format; relevant pedagogical frameworks for tech integration (e.g., SAMR model, TPACK)."
+            },
+            {
+                week: 12,
+                title: "Final Term: Capstone Project",
+                outcomes: "Present and defend a technology-integrated teaching portfolio/project; synthesize learning from the entire course.",
+                topic: "FINAL TERM: Capstone Project Presentation & Course Synthesis",
+                questions: "How can I effectively showcase my ability to integrate technology into teaching? What are my key takeaways from this course?",
+                activities: "Student presentations of their technology-integrated teaching portfolio/project, Q&A, Course wrap-up and feedback.",
+                assessment: "Final Project Presentation and Defense (e.g., a mini-teaching demo incorporating technology, a comprehensive e-portfolio).",
+                references: "All course materials; student-selected resources for their projects."
+            }
+        ];
+
+        const navigationContainer = document.getElementById('week-navigation');
+        const contentContainer = document.getElementById('content-area');
+
+        function showContent(weekNumber) {
+            document.querySelectorAll('.content-card').forEach(card => card.classList.remove('visible'));
+            document.querySelectorAll('.timeline-item').forEach(item => item.classList.remove('active-week'));
+            
+            const contentCard = document.getElementById(`week-${weekNumber}-content`);
+            if (contentCard) {
+                contentCard.classList.add('visible');
+            }
+            
+            const navItem = document.getElementById(`week-${weekNumber}-nav`);
+            if (navItem) {
+                navItem.classList.add('active-week');
+            }
+        }
+
+        syllabusData.forEach(weekData => {
+            const navItem = document.createElement('a');
+            navItem.href = `#week-${weekData.week}`;
+            navItem.id = `week-${weekData.week}-nav`;
+            navItem.className = 'timeline-item cursor-pointer block pl-6 py-2 rounded-r-lg transition-colors duration-200 hover:bg-gray-100 relative';
+            navItem.innerHTML = `<span class="font-semibold">Week ${weekData.week}:</span> ${weekData.title}`;
+            navItem.onclick = (e) => {
+                e.preventDefault();
+                showContent(weekData.week);
+            };
+            navigationContainer.appendChild(navItem);
+
+            const contentCard = document.createElement('div');
+            contentCard.id = `week-${weekData.week}-content`;
+            contentCard.className = 'content-card bg-white rounded-2xl shadow-lg p-6 md:p-8';
+            contentCard.innerHTML = `
+                <h2 class="text-3xl font-bold text-gray-800 mb-2">Week ${weekData.week}: ${weekData.topic}</h2>
+                <hr class="my-6">
+                
+                <div class="space-y-6">
+                    <div>
+                        <h4 class="font-bold text-lg text-gray-700 mb-2">📚 Learning Outcomes</h4>
+                        <p class="text-gray-600">${weekData.outcomes}</p>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-lg text-gray-700 mb-2">❓ Essential Key Questions</h4>
+                        <p class="text-gray-600">${weekData.questions}</p>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-lg text-gray-700 mb-2">💻 Suggested Activities</h4>
+                        <p class="text-gray-600">${weekData.activities}</p>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-lg text-gray-700 mb-2">📝 Suggested Assessment</h4>
+                        <p class="text-gray-600">${weekData.assessment}</p>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-lg text-gray-700 mb-2">📖 Core References</h4>
+                        <p class="text-gray-600">${weekData.references}</p>
+                    </div>
+                </div>
+            `;
+            contentContainer.appendChild(contentCard);
+        });
+
+        function analyzeActivities() {
+            const activityCounts = {
+                'Lecture/Discussion': 0,
+                'Hands-on/Activity': 0,
+                'Project/Presentation': 0,
+                'Assessment/Exam': 0
+            };
+
+            syllabusData.forEach(week => {
+                const activities = week.activities.toLowerCase();
+                if (activities.includes('lecture') || activities.includes('discussion')) activityCounts['Lecture/Discussion']++;
+                if (activities.includes('workshop') || activities.includes('activity') || activities.includes('exploration') || activities.includes('role-playing')) activityCounts['Hands-on/Activity']++;
+                if (activities.includes('presentation') || activities.includes('project') || activities.includes('critique')) activityCounts['Project/Presentation']++;
+                if (week.week === 7 || week.week === 12) activityCounts['Assessment/Exam']++;
+            });
+            return activityCounts;
+        }
+
+        const activityData = analyzeActivities();
+        const ctx = document.getElementById('activityChart').getContext('2d');
+        const activityChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(activityData),
+                datasets: [{
+                    label: 'Activity Distribution',
+                    data: Object.values(activityData),
+                    backgroundColor: [
+                        '#4fd1c5',
+                        '#48bb78',
+                        '#f6ad55',
+                        '#ed8936'
+                    ],
+                    borderColor: '#f8f7f2',
+                    borderWidth: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            font: {
+                                size: 14,
+                                family: 'Inter'
+                            },
+                             color: '#4a5568'
+                        }
+                    },
+                    tooltip: {
+                        bodyFont: {
+                            size: 14
+                        },
+                        titleFont: {
+                            size: 16
+                        }
+                    }
+                }
+            }
+        });
+
+        showContent(1);
+
+    </script>
+</body>
+</html>
